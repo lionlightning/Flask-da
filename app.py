@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import os
+import errno
+import shutil
 from flask import (
     Flask,
     request,
@@ -52,7 +54,6 @@ def upload_file():
 
 @app.route('/cleanup')
 def cleanup():
-    import os, shutil
     folder = UPLOAD_FOLDER
     for the_file in os.listdir(folder):
         file_path = os.path.join(folder, the_file)
@@ -68,7 +69,15 @@ def cleanup():
     <p>File cleanup successful.</p>
     '''
 
+def make_sure_path_exists(path):
+    try:
+        os.makedirs(path)
+    except OSError as exception:
+        if exception.errno != errno.EEXIST:
+            raise
+
 if __name__ == '__main__':
+    make_sure_path_exists("uploads/")
     # Bind to PORT if defined, otherwise default to 5000.
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
