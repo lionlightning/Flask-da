@@ -10,9 +10,11 @@ from flask import (
     redirect,
     render_template,
     url_for,
+    flash,
     send_from_directory
 )
 from werkzeug.utils import secure_filename
+from analysis import analysis
 
 UPLOAD_FOLDER = './uploads/'
 ALLOWED_EXTENSIONS = set(['txt'])
@@ -34,6 +36,7 @@ def uploaded_file(filename):
 
 @app.route('/', methods=['GET', 'POST'])
 def upload_file():
+    cleanup()
     if request.method == 'POST':
         # check if the post request has the file part
         if 'file' not in request.files:
@@ -48,8 +51,10 @@ def upload_file():
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            return redirect(url_for('uploaded_file',
-                                    filename=filename))
+            # Do analysis
+            analysis("."+url_for('uploaded_file', filename=filename))
+            output_filename = "output.xlsx"
+            return redirect(url_for('uploaded_file', filename=output_filename))
     return render_template("index.html")
 
 @app.route('/cleanup')
@@ -80,4 +85,5 @@ if __name__ == '__main__':
     make_sure_path_exists("uploads/")
     # Bind to PORT if defined, otherwise default to 5000.
     port = int(os.environ.get('PORT', 5000))
+    app.secret_key = 'super secret key'
     app.run(host='0.0.0.0', port=port, debug=True)
